@@ -7,7 +7,7 @@ use tokio::sync::mpsc;
 pub async fn run_tokio_mpsc_io_test(queue_size: u32, num_producers: u32) -> std::time::Duration {
     let num_consumers = 1;
     println!(
-        "Starting tokio::sync::mpsc performance test with queue size: {}, producers: {}, consumers: {}",
+        "Starting tokio::sync::mpsc io performance test with queue size: {}, producers: {}, consumers: {}",
         queue_size, num_producers, num_consumers
     );
 

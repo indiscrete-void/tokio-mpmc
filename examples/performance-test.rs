@@ -11,6 +11,8 @@ async fn main() {
     let num_producers = 4;
     let num_consumers = 4;
 
+    println!("============================================");
+    println!("Starting non-IO tests");
     run_tokio_mpmc_test(
         queue_size as u32,
         num_producers as u32,
@@ -19,7 +21,8 @@ async fn main() {
     .await;
     run_tokio_mpsc_test(queue_size as u32, num_producers as u32).await;
 
-    let queue_size = 100_000;
+    println!("============================================");
+    println!("Starting IO tests");
     run_tokio_mpmc_io_test(
         queue_size as u32,
         num_producers as u32,

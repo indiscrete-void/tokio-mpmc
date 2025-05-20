@@ -67,6 +67,38 @@ Main APIs include:
 - `Queue::is_full()` - Check if queue is full
 - `Queue::is_closed()` - Check if queue is closed
 
+## Performance
+
+The following performance tests were conducted on a lightweight server with 2 CPU cores and 4GB RAM:
+
+- **tokio-mpmc**:
+  - Queue size: 1,000,000
+  - Producers: 4
+  - Consumers: 4
+  - Performance test finished in: 318.360935ms
+
+- **tokio::sync::mpsc**:
+  - Queue size: 1,000,000
+  - Producers: 4
+  - Consumers: 1
+  - Performance test finished in: 987.390354ms
+
+- **tokio-mpmc IO**:
+  - Queue size: 1,000,000
+  - Producers: 4
+  - Consumers: 4
+  - IO performance test finished in: 4.495057117s
+
+- **tokio::sync::mpsc IO**:
+  - Queue size: 1,000,000
+  - Producers: 4
+  - Consumers: 1
+  - IO performance test finished in: 7.671314196s
+
+These results demonstrate the efficiency of tokio-mpmc in handling multiple producers and consumers compared to tokio::sync::mpsc.
+
+> See [benchmark code](./examples/performance-test.rs)
+
 ## License
 
 This project is licensed under the Apache-2.0 License. See the [LICENSE](LICENSE) file for details.
