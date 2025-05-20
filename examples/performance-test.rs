@@ -1,5 +1,7 @@
 mod tests;
 
+use tests::flume_bounded_io_test::run_flume_bounded_io_test;
+use tests::flume_bounded_test::run_flume_bounded_test;
 use tests::tokio_mpmc_io_test::run_tokio_mpmc_io_test;
 use tests::tokio_mpmc_test::run_tokio_mpmc_test;
 use tests::tokio_mpsc_io_test::run_tokio_mpsc_io_test;
@@ -20,6 +22,7 @@ async fn main() {
     )
     .await;
     run_tokio_mpsc_test(queue_size as u32, num_producers as u32).await;
+    run_flume_bounded_test(queue_size as u32, num_producers as u32).await;
 
     println!("============================================");
     println!("Starting IO tests");
@@ -30,4 +33,5 @@ async fn main() {
     )
     .await;
     run_tokio_mpsc_io_test(queue_size as u32, num_producers as u32).await;
+    run_flume_bounded_io_test(queue_size as u32, num_producers as u32).await;
 }
