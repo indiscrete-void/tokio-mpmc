@@ -73,10 +73,12 @@ The performance tests were conducted on a lightweight server with 2 CPU cores an
 
 | Implementation | Producers | Consumers | Completion Time |
 |----------------|-----------|-----------|-----------------|
-| **tokio-mpmc** | 4         | 4         | 318.360935ms    |
-| **tokio::sync::mpsc** | 4         | 1         | 987.390354ms   |
-| **tokio-mpmc IO** | 4         | 4         | 4.495057117s   |
-| **tokio::sync::mpsc IO** | 4         | 1         | 7.671314196s  |
+| **tokio-mpmc** | 4         | 4         | 360.375444ms    |
+| **flume::bounded** | 4         | 4         | 681.909465ms    |
+| **tokio::sync::mpsc** | 4         | 1         | 966.765734ms   |
+| **tokio-mpmc IO** | 4         | 4         | 4.947700184s   |
+| **flume::bounded IO** | 4         | 4         | 7.535781974s    |
+| **tokio::sync::mpsc IO** | 4         | 1         | 8.144663516s  |
 
 These results demonstrate the efficiency of tokio-mpmc in handling multiple producers and consumers compared to tokio::sync::mpsc.
 
