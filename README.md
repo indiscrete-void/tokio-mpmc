@@ -69,31 +69,14 @@ Main APIs include:
 
 ## Performance
 
-The following performance tests were conducted on a lightweight server with 2 CPU cores and 4GB RAM:
+The performance tests were conducted on a lightweight server with 2 CPU cores and 4GB RAM, using a queue size of 1,000,000.
 
-- **tokio-mpmc**:
-  - Queue size: 1,000,000
-  - Producers: 4
-  - Consumers: 4
-  - Performance test finished in: 318.360935ms
-
-- **tokio::sync::mpsc**:
-  - Queue size: 1,000,000
-  - Producers: 4
-  - Consumers: 1
-  - Performance test finished in: 987.390354ms
-
-- **tokio-mpmc IO**:
-  - Queue size: 1,000,000
-  - Producers: 4
-  - Consumers: 4
-  - IO performance test finished in: 4.495057117s
-
-- **tokio::sync::mpsc IO**:
-  - Queue size: 1,000,000
-  - Producers: 4
-  - Consumers: 1
-  - IO performance test finished in: 7.671314196s
+| Implementation | Producers | Consumers | Completion Time |
+|----------------|-----------|-----------|-----------------|
+| **tokio-mpmc** | 4         | 4         | 318.360935ms    |
+| **tokio::sync::mpsc** | 4         | 1         | 987.390354ms   |
+| **tokio-mpmc IO** | 4         | 4         | 4.495057117s   |
+| **tokio::sync::mpsc IO** | 4         | 1         | 7.671314196s  |
 
 These results demonstrate the efficiency of tokio-mpmc in handling multiple producers and consumers compared to tokio::sync::mpsc.
 
