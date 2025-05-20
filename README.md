@@ -69,18 +69,20 @@ Main APIs include:
 
 ## Performance
 
-The performance tests were conducted on a lightweight server with 2 CPU cores and 4GB RAM, using a queue size of 1,000,000.
+```bash
+cargo criterion --message-format=json | criterion-table > BENCHMARKS.md
+```
 
-| Implementation | Producers | Consumers | Completion Time |
-|----------------|-----------|-----------|-----------------|
-| **tokio-mpmc** | 4         | 4         | 318.360935ms    |
-| **tokio::sync::mpsc** | 4         | 1         | 987.390354ms   |
-| **tokio-mpmc IO** | 4         | 4         | 4.495057117s   |
-| **tokio::sync::mpsc IO** | 4         | 1         | 7.671314196s  |
+### Benchmark Results
 
-These results demonstrate the efficiency of tokio-mpmc in handling multiple producers and consumers compared to tokio::sync::mpsc.
+|              | `tokio-mpmc`              | `flume`                           |
+|:-------------|:--------------------------|:--------------------------------- |
+| **`non-io`** | `649.09 us` (✅ **1.00x**) | `768.68 us` (❌ *1.18x slower*)    |
+| **`io`**     | `191.51 ms` (✅ **1.00x**) | `215.82 ms` (❌ *1.13x slower*)    |
 
-> See [benchmark code](./examples/performance-test.rs)
+> **Note**: `non-io` means no IO operation, `io` means IO operation.
+
+> See [benchmark code](./benches/queue_benchmark.rs)
 
 ## License
 
