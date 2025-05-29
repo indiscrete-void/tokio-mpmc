@@ -33,6 +33,6 @@ impl QueueBenchmark for TokioMpmcQueue {
     }
 
     async fn close(&self) {
-        self.queue.close().await;
+        self.queue.close();
     }
 }

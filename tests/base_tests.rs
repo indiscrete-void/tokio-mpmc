@@ -41,7 +41,7 @@ mod tests {
     #[tokio::test]
     async fn test_close() {
         let queue = Queue::new(1);
-        queue.close().await;
+        queue.close();
 
         assert!(queue.send(1).await.is_err());
         assert_eq!(queue.receive().await.unwrap(), None);
@@ -122,7 +122,7 @@ mod tests {
         tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
 
         // Close the queue
-        queue.close().await;
+        queue.close();
 
         // Wait for tasks to finish (they should be unblocked by close)
         producer_task.await.unwrap();

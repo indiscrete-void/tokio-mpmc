@@ -1,25 +1,24 @@
 use crate::benchmark::QueueBenchmark;
-use tokio::sync::mpsc;
 
-/// Benchmark implementation for tokio-mpsc queue
-pub struct TokioMpscChannel {
-    sender: mpsc::Sender<u32>,
-    receiver: mpsc::Receiver<u32>,
+/// Benchmark implementation for tokio-mpmc channel.
+pub struct TokioMpmcChannel {
+    sender: tokio_mpmc::Sender<u32>,
+    receiver: tokio_mpmc::Receiver<u32>,
 }
 
-impl Clone for TokioMpscChannel {
+impl Clone for TokioMpmcChannel {
     fn clone(&self) -> Self {
-        let (sender, receiver) = mpsc::channel(self.sender.capacity());
+        let (sender, receiver) = tokio_mpmc::channel(self.sender.capacity());
         Self { sender, receiver }
     }
 }
 
 #[async_trait::async_trait]
-impl QueueBenchmark for TokioMpscChannel {
+impl QueueBenchmark for TokioMpmcChannel {
     type Message = u32;
 
     fn new(capacity: usize) -> Self {
-        let (sender, receiver) = mpsc::channel(capacity);
+        let (sender, receiver) = tokio_mpmc::channel(capacity);
         Self { sender, receiver }
     }
 
@@ -28,11 +27,11 @@ impl QueueBenchmark for TokioMpscChannel {
     }
 
     async fn receive(&mut self) -> anyhow::Result<Option<Self::Message>> {
-        Ok(self.receiver.recv().await)
+        self.receiver.recv().await.map_err(|e| e.into())
     }
 
     async fn close(&self) {
-        // mpsc queue automatically closes when all senders are dropped
+        // mpmc channel automatically closes when all senders are dropped
         let _ = &self.sender;
     }
 }

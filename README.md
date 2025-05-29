@@ -25,10 +25,12 @@ Add the following dependency to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-tokio-mpmc = "0.1"
+tokio-mpmc = "0.2"
 ```
 
 ## Usage Example
+
+### Queue
 
 ```rust
 use tokio_mpmc::Queue;
@@ -51,22 +53,36 @@ async fn main() {
     }
 
     // Close the queue
-    queue.close().await;
+    drop(queue);
 }
 ```
 
-## API Documentation
+### Channel
 
-Main APIs include:
+```rust
+use tokio_mpmc::channel;
 
-- `Queue::new(capacity)` - Create a new queue
-- `Queue::send(value)` - Send a message
-- `Queue::receive()` - Receive a message
-- `Queue::close()` - Close the queue
-- `Queue::len()` - Get queue length
-- `Queue::is_empty()` - Check if queue is empty
-- `Queue::is_full()` - Check if queue is full
-- `Queue::is_closed()` - Check if queue is closed
+#[tokio::main]
+async fn main() {
+    // Create a channel with capacity of 100
+    let (tx, rx) = channel(100);
+
+    // Send a message
+    if let Err(e) = tx.send("Hello").await {
+        eprintln!("Send failed: {}", e);
+    }
+
+    // Receive a message
+    match rx.recv().await {
+        Ok(Some(msg)) => println!("Received message: {}", msg),
+        Ok(None) => println!("Channel is closed"),
+        Err(e) => eprintln!("Receive failed: {}", e),
+    }
+
+    // Close the channel
+    drop(tx);
+}
+```
 
 ## Performance
 
@@ -76,10 +92,10 @@ cargo criterion --message-format=json | criterion-table > BENCHMARKS.md
 
 ### Benchmark Results
 
-|              | `tokio-mpmc`              | `flume`                           |
-|:-------------|:--------------------------|:--------------------------------- |
-| **`non-io`** | `649.09 us` (✅ **1.00x**) | `768.68 us` (❌ *1.18x slower*)    |
-| **`io`**     | `191.51 ms` (✅ **1.00x**) | `215.82 ms` (❌ *1.13x slower*)    |
+|              | `tokio-mpmc-channel`          | `tokio-mpmc-queue`               | `flume`                            |
+|:-------------|:------------------------------|:---------------------------------|:---------------------------------- |
+| **`non-io`** | `65.96 us` (✅ **1.00x**)      | `166.24 us` (❌ *2.52x slower*)   | `780.75 us` (❌ *11.84x slower*)    |
+| **`io`**     | `48.12 ms` (✅ **1.00x**)      | `50.64 ms` (✅ **1.05x slower**)  | `202.26 ms` (❌ *4.20x slower*)     |
 
 > **Note**: `non-io` means no IO operation, `io` means IO operation.
 

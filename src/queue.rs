@@ -6,6 +6,33 @@ use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 /// This queue allows multiple asynchronous tasks to concurrently send and receive messages.
 /// It uses a fixed-size buffer and provides backpressure by waiting when the queue is full
 /// (for producers) or empty (for consumers).
+///
+/// # Examples
+///
+/// ```rust
+/// // Using the legacy Queue API
+/// use tokio_mpmc::Queue;
+///
+/// #[tokio::main]
+/// async fn main() {
+///     // Create a queue with capacity of 100
+///     let queue = Queue::new(100);
+///
+///     // Send a message
+///     if let Err(e) = queue.send("Hello").await {
+///         eprintln!("Send failed: {}", e);
+///     }
+///
+///     // Receive a message
+///     match queue.receive().await {
+///         Ok(Some(msg)) => println!("Received message: {}", msg),
+///         Ok(None) => println!("Queue is empty"),
+///         Err(e) => eprintln!("Receive failed: {}", e),
+///     }
+///
+///     // Close the queue
+///     drop(queue);
+/// }
 #[derive(Clone)]
 pub struct Queue<T> {
     inner: Arc<Inner<T>>,
@@ -136,7 +163,7 @@ impl<T> Queue<T> {
     /// This prevents any new messages from being sent. Tasks currently waiting in `send`
     /// will return `Err(QueueError::QueueClosed)`. Tasks waiting in `receive` will return
     /// `Ok(None)` once the queue is empty.
-    pub async fn close(&self) {
+    pub fn close(&self) {
         self.inner.is_closed.store(true, Ordering::Release);
         // Notify all waiting producers and consumers so they can check the closed state
         self.inner.producer_waiters.notify_waiters();
@@ -177,5 +204,11 @@ impl<T> Queue<T> {
     /// `true` if the queue is closed, `false` otherwise.
     pub fn is_closed(&self) -> bool {
         self.inner.is_closed.load(Ordering::Acquire)
+    }
+}
+
+impl<T> Drop for Queue<T> {
+    fn drop(&mut self) {
+        self.close();
     }
 }

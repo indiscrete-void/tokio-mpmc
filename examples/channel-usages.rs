@@ -1,44 +1,45 @@
-use tokio_mpmc::Queue;
+use tokio_mpmc::channel;
 
 #[tokio::main]
 async fn main() {
     tracing_subscriber::fmt().init();
 
-    let queue = Queue::new(10);
+    // Create a channel with capacity 10
+    let (tx, rx) = channel(10);
 
     // Spawn multiple receiver tasks
     let num_receivers = 3;
     let mut receiver_tasks = Vec::new();
 
     for i in 0..num_receivers {
-        let receiver_queue = queue.clone();
+        let rx = rx.clone();
         let task = tokio::spawn(async move {
             let mut count = 0;
             tracing::info!("Receiver {} started.", i);
-            while let Ok(Some(value)) = receiver_queue.receive().await {
+            while let Ok(Some(value)) = rx.recv().await {
                 tracing::info!("Receiver {} received value: {}", i, value);
                 count += 1;
             }
-            tracing::info!("Receiver {} finished. count: {}", i, count);
+            tracing::info!("Receiver {} completed. Received count: {}", i, count);
         });
         receiver_tasks.push(task);
     }
 
     // Send values after receivers are ready
     for i in 0..10 {
-        queue.send(i).await.unwrap();
+        tx.send(i).await.unwrap();
     }
 
-    // Wait for a moment to allow receivers to start
+    // Wait for a while to let receivers process
     tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
 
-    // Close the queue after sending
-    drop(queue);
+    // Close the channel after sending is complete
+    drop(tx); // Drop the Sender to trigger the channel closure
 
     // Wait for all receiver tasks to complete
     for task in receiver_tasks {
         task.await.unwrap();
     }
 
-    tracing::info!("All receivers finished.");
+    tracing::info!("All receivers completed.");
 }

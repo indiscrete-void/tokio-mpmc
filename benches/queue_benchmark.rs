@@ -5,8 +5,8 @@ mod benchmark;
 
 use benchmark::BenchmarkConfig;
 use benchmark::flume_benchmark::FlumeQueue;
-use benchmark::tokio_mpmc_benchmark::TokioMpmcQueue;
-// use benchmark::tokio_mpsc_benchmark::TokioMpscQueue;
+use benchmark::tokio_mpmc_channel_benchmark::TokioMpmcChannel;
+use benchmark::tokio_mpmc_queue_benchmark::TokioMpmcQueue;
 
 fn bench_queues(c: &mut Criterion) {
     let mut group = c.benchmark_group("queue-comparison");
@@ -17,31 +17,31 @@ fn bench_queues(c: &mut Criterion) {
     group.measurement_time(config.measurement_time);
     group.warm_up_time(config.warm_up_time);
 
-    // // tokio-mpsc non-IO test
-    // let mpsc_config = BenchmarkConfig {
-    //     num_consumers: 1, // mpsc only supports a single consumer
-    //     ..config
-    // };
-    // group.bench_function("tokio-mpsc/non-io", |b| {
-    //     b.iter(|| {
-    //         block_on(benchmark::run_non_io_benchmark::<TokioMpscQueue>(
-    //             &mpsc_config,
-    //         ))
-    //     });
-    // });
+    // tokio-mpmc channel non-IO test
+    group.bench_function("tokio-mpmc-channel/non-io", |b| {
+        b.iter(|| {
+            block_on(benchmark::run_non_io_channel_benchmark::<TokioMpmcChannel>(
+                &config,
+            ))
+        });
+    });
 
-    // // tokio-mpsc IO test
-    // group.bench_function("tokio-mpsc/io", |b| {
-    //     b.iter(|| block_on(benchmark::run_io_benchmark::<TokioMpscQueue>(&mpsc_config)));
-    // });
+    // tokio-mpmc channel IO test
+    group.bench_function("tokio-mpmc-channel/io", |b| {
+        b.iter(|| {
+            block_on(benchmark::run_io_channel_benchmark::<TokioMpmcChannel>(
+                &config,
+            ))
+        });
+    });
 
-    // tokio-mpmc non-IO test
-    group.bench_function("tokio-mpmc/non-io", |b| {
+    // tokio-mpmc queue non-IO test
+    group.bench_function("tokio-mpmc-queue/non-io", |b| {
         b.iter(|| block_on(benchmark::run_non_io_benchmark::<TokioMpmcQueue>(&config)));
     });
 
-    // tokio-mpmc IO test
-    group.bench_function("tokio-mpmc/io", |b| {
+    // tokio-mpmc queue IO test
+    group.bench_function("tokio-mpmc-queue/io", |b| {
         b.iter(|| block_on(benchmark::run_io_benchmark::<TokioMpmcQueue>(&config)));
     });
 
