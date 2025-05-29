@@ -179,12 +179,21 @@ impl<T> Sender<T> {
         self.inner.is_closed.load(Ordering::Acquire)
     }
 
-    /// Gets the capacity of the channel.
+    /// Returns the current capacity of the channel.
+    ///
+    /// # Returns
+    ///
+    /// The current number of elements in the channel.
+    pub fn capacity(&self) -> usize {
+        self.len()
+    }
+
+    /// Returns the maximum buffer capacity of the channel.
     ///
     /// # Returns
     ///
     /// The maximum number of elements the channel can hold.
-    pub fn capacity(&self) -> usize {
+    pub fn max_capacity(&self) -> usize {
         self.inner.buffer.capacity()
     }
 }
@@ -275,12 +284,21 @@ impl<T> Receiver<T> {
         self.inner.is_closed.load(Ordering::Acquire)
     }
 
-    /// Gets the capacity of the channel.
+    /// Returns the current capacity of the channel.
+    ///
+    /// # Returns
+    ///
+    /// The current number of elements in the channel.
+    pub fn capacity(&self) -> usize {
+        self.len()
+    }
+
+    /// Returns the maximum buffer capacity of the channel.
     ///
     /// # Returns
     ///
     /// The maximum number of elements the channel can hold.
-    pub fn capacity(&self) -> usize {
+    pub fn max_capacity(&self) -> usize {
         self.inner.buffer.capacity()
     }
 }

@@ -8,7 +8,7 @@ pub struct TokioMpmcChannel {
 
 impl Clone for TokioMpmcChannel {
     fn clone(&self) -> Self {
-        let (sender, receiver) = tokio_mpmc::channel(self.sender.capacity());
+        let (sender, receiver) = tokio_mpmc::channel(self.sender.max_capacity());
         Self { sender, receiver }
     }
 }
