@@ -1,4 +1,3 @@
-use benchmark::tokio_mpsc_benchmark::TokioMpscChannel;
 use criterion::{Criterion, criterion_group, criterion_main};
 use tokio_test::block_on;
 
@@ -8,6 +7,7 @@ use benchmark::BenchmarkConfig;
 use benchmark::flume_benchmark::FlumeQueue;
 use benchmark::tokio_mpmc_channel_benchmark::TokioMpmcChannel;
 use benchmark::tokio_mpmc_queue_benchmark::TokioMpmcQueue;
+use benchmark::tokio_mpsc_benchmark::TokioMpscChannel;
 
 fn bench_queues(c: &mut Criterion) {
     let mut group = c.benchmark_group("queue-comparison");
