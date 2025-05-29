@@ -1,5 +1,5 @@
 use std::{hint::black_box, io::Write, time::Duration};
-use tokio::task::JoinHandle;
+use tokio::{sync::mpsc, task::JoinHandle};
 
 pub mod flume_benchmark;
 pub mod tokio_mpmc_channel_benchmark;
@@ -46,6 +46,105 @@ impl Default for BenchmarkConfig {
             warm_up_time: Duration::from_secs(2),
         }
     }
+}
+
+/// Run non-IO mpsc benchmark test
+pub async fn run_non_io_mpsc_channel_benchmark<Q: QueueBenchmark>(config: &BenchmarkConfig) {
+    let (tx, mut rx) = mpsc::channel(config.queue_size);
+    let mut producer_handles = vec![];
+    let mut consumer_handles = vec![];
+
+    // Producer tasks
+    for i in 0..config.num_producers {
+        let tx = tx.clone();
+        let messages_per_producer = config.queue_size / config.num_producers;
+        let handle = tokio::spawn(async move {
+            let start = i * messages_per_producer;
+            let end = start + messages_per_producer;
+            for msg in start..end {
+                if tx
+                    .send(black_box(Q::Message::from(msg.try_into().unwrap())))
+                    .await
+                    .is_err()
+                {
+                    tracing::warn!("Producer {} failed to send message", i);
+                    break;
+                }
+            }
+        });
+        producer_handles.push(handle);
+    }
+
+    // Consumer tasks
+    let queue_size = config.queue_size;
+    let handle = tokio::spawn(async move {
+        let mut received = 0;
+        while received < queue_size {
+            match rx.recv().await {
+                Some(_) => {
+                    received += 1;
+                }
+                None => {
+                    break;
+                }
+            }
+        }
+    });
+    consumer_handles.push(handle);
+
+    wait_for_tasks(producer_handles, consumer_handles).await;
+    drop(tx);
+}
+
+/// Run IO mpsc channel benchmark test
+pub async fn run_io_mpsc_channel_benchmark<Q: QueueBenchmark>(config: &BenchmarkConfig) {
+    let (tx, mut rx) = mpsc::channel(config.queue_size);
+    let mut producer_handles = vec![];
+    let mut consumer_handles = vec![];
+    // Producer tasks
+    for i in 0..config.num_producers {
+        let tx = tx.clone();
+        let messages_per_producer = config.queue_size / config.num_producers;
+        let handle = tokio::spawn(async move {
+            let start = i * messages_per_producer;
+            let end = start + messages_per_producer;
+            for msg in start..end {
+                if tx
+                    .send(black_box(Q::Message::from(msg.try_into().unwrap())))
+                    .await
+                    .is_err()
+                {
+                    break;
+                }
+            }
+        });
+        producer_handles.push(handle);
+    }
+
+    // Consumer tasks (with IO operations)
+    let queue_size = config.queue_size;
+    let handle = tokio::spawn(async move {
+        let mut received = 0;
+        while received < queue_size {
+            match rx.recv().await {
+                Some(msg) => {
+                    received += 1;
+                    let _ = std::fs::OpenOptions::new()
+                        .append(true)
+                        .create(true)
+                        .open("bench_output.txt")
+                        .and_then(|mut file| file.write_all(msg.to_string().as_bytes()));
+                }
+                _ => break,
+            }
+        }
+    });
+    consumer_handles.push(handle);
+
+    wait_for_tasks(producer_handles, consumer_handles).await;
+    // Clean up benchmark output files
+    let _ = std::fs::remove_file(format!("bench_output.txt"));
+    drop(tx);
 }
 
 /// Run non-IO benchmark test
