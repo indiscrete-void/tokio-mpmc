@@ -17,16 +17,28 @@ async fn main() {
             let mut count = 0;
             tracing::info!("Receiver {} started.", i);
             while let Ok(Some(value)) = rx.recv().await {
-                tracing::info!("Receiver {} received value: {}", i, value);
+                tracing::info!(
+                    "Receiver {} received value: {} capacity: {} max_capacity: {}",
+                    i,
+                    value,
+                    rx.capacity(),
+                    rx.max_capacity()
+                );
                 count += 1;
             }
-            tracing::info!("Receiver {} completed. Received count: {}", i, count);
+            tracing::info!(
+                "Receiver {} completed. Received count: {} capacity: {} max_capacity: {}",
+                i,
+                count,
+                rx.capacity(),
+                rx.max_capacity()
+            );
         });
         receiver_tasks.push(task);
     }
 
     // Send values after receivers are ready
-    for i in 0..10 {
+    for i in 0..100 {
         tx.send(i).await.unwrap();
     }
 

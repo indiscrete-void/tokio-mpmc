@@ -185,7 +185,7 @@ impl<T> Sender<T> {
     ///
     /// The current number of elements in the channel.
     pub fn capacity(&self) -> usize {
-        self.len()
+        self.max_capacity() - self.len()
     }
 
     /// Returns the maximum buffer capacity of the channel.
@@ -290,7 +290,7 @@ impl<T> Receiver<T> {
     ///
     /// The current number of elements in the channel.
     pub fn capacity(&self) -> usize {
-        self.len()
+        self.max_capacity() - self.len()
     }
 
     /// Returns the maximum buffer capacity of the channel.
