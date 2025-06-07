@@ -42,7 +42,7 @@ impl Default for BenchmarkConfig {
             num_producers: 4,
             num_consumers: 4,
             sample_size: 10,
-            measurement_time: Duration::from_secs(15),
+            measurement_time: Duration::from_secs(22),
             warm_up_time: Duration::from_secs(2),
         }
     }

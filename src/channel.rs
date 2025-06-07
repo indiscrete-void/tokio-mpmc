@@ -106,25 +106,31 @@ impl<T> Sender<T> {
     /// `Ok(())` if the message was successfully sent.
     /// `Err(ChannelError::ChannelClosed)` if the channel was closed while waiting or before sending.
     pub async fn send(&self, mut value: T) -> ChannelResult<()> {
-        // If the channel is closed, return error immediately
-        if self.inner.is_closed.load(Ordering::Acquire) {
-            return Err(ChannelError::ChannelClosed);
-        }
-
-        // Try to push the value to the channel
         loop {
+            // Check if channel is closed before attempting to send
+            if self.inner.is_closed.load(Ordering::Acquire) {
+                return Err(ChannelError::ChannelClosed);
+            }
+
+            // Try to push the value to the channel
             match self.inner.buffer.push(value) {
                 Ok(_) => {
-                    self.inner.count.fetch_add(1, Ordering::Release);
-                    self.inner.consumer_waiters.notify_one();
+                    // Only increment count after successfully pushing
+                    let old_count = self.inner.count.fetch_add(1, Ordering::AcqRel);
+                    // Notify one consumer if there are any waiting
+                    if old_count == 0 {
+                        self.inner.consumer_waiters.notify_one();
+                    }
                     return Ok(());
                 }
                 Err(v) => {
                     // Channel is full, wait for space
+                    value = v;
+                    // Double-check if channel was closed while we were waiting
                     if self.inner.is_closed.load(Ordering::Acquire) {
                         return Err(ChannelError::ChannelClosed);
                     }
-                    value = v;
+                    // Wait for space to become available
                     self.inner.producer_waiters.notified().await;
                 }
             }
@@ -137,10 +143,21 @@ impl<T> Sender<T> {
     /// will return `Err(ChannelError::ChannelClosed)`. Tasks waiting in `recv` will return
     /// `Ok(None)` once the channel is empty.
     pub fn close(&self) {
-        self.inner.is_closed.store(true, Ordering::Release);
+        tracing::debug!(
+            "Closing channel, current count: {}",
+            self.inner.count.load(Ordering::Relaxed)
+        );
+        let was_closed = self.inner.is_closed.swap(true, Ordering::Release);
+        if was_closed {
+            tracing::debug!("Channel was already closed");
+            return;
+        }
+
         // Notify all waiting producers and consumers so they can check the closed state
+        tracing::debug!("Notifying all waiters");
         self.inner.producer_waiters.notify_waiters();
         self.inner.consumer_waiters.notify_waiters();
+        tracing::debug!("Channel closed");
     }
 
     /// Gets the current number of elements in the channel.
@@ -200,7 +217,17 @@ impl<T> Sender<T> {
 
 impl<T> Drop for Sender<T> {
     fn drop(&mut self) {
-        self.close();
+        let remaining = Arc::strong_count(&self.inner);
+        // We check for remaining == 2 because:
+        // - 1 for the current Sender being dropped
+        // - 1 for the internal Arc<Inner<T>> reference
+        // When this is the last Sender, remaining will be 2
+        if remaining == 2 {
+            tracing::debug!("Last sender dropped, closing channel");
+            self.close();
+        } else {
+            tracing::debug!("Sender dropped, {} senders remaining", remaining);
+        }
     }
 }
 
@@ -225,26 +252,33 @@ impl<T> Receiver<T> {
     /// `Err(ChannelError::ChannelClosed)` if the channel was closed while waiting but not empty.
     pub async fn recv(&self) -> ChannelResult<Option<T>> {
         loop {
-            // Try to pop a value from the channel
-            match self.inner.buffer.pop() {
-                Some(value) => {
-                    self.inner.count.fetch_sub(1, Ordering::Release);
+            // Try to pop a value from the channel first
+            if let Some(value) = self.inner.buffer.pop() {
+                // Only decrement count after successfully popping
+                let prev_count = self.inner.count.fetch_sub(1, Ordering::AcqRel);
+                // Notify one producer that space is available
+                if prev_count == self.inner.buffer.capacity() {
                     self.inner.producer_waiters.notify_one();
+                }
+                return Ok(Some(value));
+            }
+
+            // Channel is empty, check if it's closed
+            if self.inner.is_closed.load(Ordering::Acquire) {
+                // Double-check if there are any items that might have been added
+                // after we checked but before we saw the closed flag
+                if let Some(value) = self.inner.buffer.pop() {
+                    let prev_count = self.inner.count.fetch_sub(1, Ordering::AcqRel);
+                    if prev_count == self.inner.buffer.capacity() {
+                        self.inner.producer_waiters.notify_one();
+                    }
                     return Ok(Some(value));
                 }
-                None => {
-                    // Channel is empty, check if it's closed
-                    if self.inner.is_closed.load(Ordering::Acquire) {
-                        return if self.inner.count.load(Ordering::Acquire) == 0 {
-                            Ok(None)
-                        } else {
-                            Err(ChannelError::ChannelClosed)
-                        };
-                    }
-                    // Wait for new items
-                    self.inner.consumer_waiters.notified().await;
-                }
+                return Ok(None);
             }
+
+            // Wait for new items to arrive
+            self.inner.consumer_waiters.notified().await;
         }
     }
 
