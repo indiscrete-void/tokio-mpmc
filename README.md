@@ -53,7 +53,7 @@ async fn main() {
     }
 
     // Close the queue
-    drop(queue);
+    queue.close();
 }
 ```
 
@@ -78,9 +78,6 @@ async fn main() {
         Ok(None) => println!("Channel is closed"),
         Err(e) => eprintln!("Receive failed: {}", e),
     }
-
-    // Close the channel
-    drop(tx);
 }
 ```
 
