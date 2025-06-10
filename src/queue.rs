@@ -31,7 +31,7 @@ use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 ///     }
 ///
 ///     // Close the queue
-///     drop(queue);
+///     queue.close();
 /// }
 #[derive(Clone)]
 pub struct Queue<T> {
@@ -204,24 +204,5 @@ impl<T> Queue<T> {
     /// `true` if the queue is closed, `false` otherwise.
     pub fn is_closed(&self) -> bool {
         self.inner.is_closed.load(Ordering::Acquire)
-    }
-}
-
-impl<T> Drop for Queue<T> {
-    fn drop(&mut self) {
-        // Check if this is the last sender being dropped.
-        // The count is 4 because there are 3 strong references by default:
-        // 1. The original Queue instance
-        // 2. The receiver's copy of the Queue
-        // 3. The waker list in the inner state
-        // When the count drops to 4, it means all senders have been dropped
-        // and only these 3 references remain, so we can safely close the channel.
-        let remaining = Arc::strong_count(&self.inner);
-        if remaining == 4 {
-            tracing::debug!("Last sender dropped, closing channel");
-            self.close();
-        } else {
-            tracing::debug!("Sender dropped, {} senders remaining", remaining - 3);
-        }
     }
 }

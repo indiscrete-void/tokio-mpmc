@@ -36,9 +36,6 @@
 //!         Ok(None) => println!("Channel is closed"),
 //!         Err(e) => eprintln!("Receive failed: {}", e),
 //!     }
-//!
-//!     // Close the channel
-//!     drop(tx);
 //! }
 //! ```
 //!
@@ -66,7 +63,7 @@
 //!     }
 //!
 //!     // Close the queue
-//!     drop(queue);
+//!     queue.close();
 //! }
 //! ```
 

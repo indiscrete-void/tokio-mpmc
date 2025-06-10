@@ -99,8 +99,5 @@ async fn send_task(tx: tokio_mpmc::Sender<i32>, count: usize) {
         total_sent += result.unwrap();
     }
 
-    // Close the channel after all messages are sent
-    drop(tx);
-
     tracing::info!("Producer finished. Total messages sent: {}", total_sent);
 }

@@ -45,6 +45,4 @@ async fn send_task(tx: tokio_mpmc::Sender<i32>) {
     while let Some(result) = tasks.join_next().await {
         result.unwrap();
     }
-
-    drop(tx);
 }

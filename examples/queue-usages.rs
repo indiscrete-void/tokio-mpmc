@@ -48,5 +48,5 @@ async fn send_task(queue: Queue<i32>) {
         result.unwrap();
     }
 
-    drop(queue);
+    queue.close();
 }

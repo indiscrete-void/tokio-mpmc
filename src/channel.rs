@@ -46,6 +46,7 @@ pub fn channel<T>(capacity: usize) -> (Sender<T>, Receiver<T>) {
         count: AtomicUsize::new(0),
         producer_waiters: Arc::new(Notify::new()),
         consumer_waiters: Arc::new(Notify::new()),
+        sender_count: AtomicUsize::new(1),
     });
 
     let sender = Sender {
@@ -73,6 +74,8 @@ struct Inner<T> {
     /// Notifier for consumers waiting for items in the buffer.
     /// Consumers wait on this when the channel is empty.
     consumer_waiters: Arc<Notify>,
+    /// Counter for tracking the number of senders.
+    sender_count: AtomicUsize,
 }
 
 /// The sending half of the channel.
@@ -217,22 +220,19 @@ impl<T> Sender<T> {
 
 impl<T> Drop for Sender<T> {
     fn drop(&mut self) {
-        let remaining = Arc::strong_count(&self.inner);
-        // We check for remaining == 2 because:
-        // - 1 for the current Sender being dropped
-        // - 1 for the internal Arc<Inner<T>> reference
-        // When this is the last Sender, remaining will be 2
-        if remaining == 2 {
+        let old_count = self.inner.sender_count.fetch_sub(1, Ordering::Relaxed);
+        if old_count == 1 {
             tracing::debug!("Last sender dropped, closing channel");
             self.close();
         } else {
-            tracing::debug!("Sender dropped, {} senders remaining", remaining);
+            tracing::debug!("Sender dropped, {} senders remaining", old_count - 1);
         }
     }
 }
 
 impl<T> Clone for Sender<T> {
     fn clone(&self) -> Self {
+        self.inner.sender_count.fetch_add(1, Ordering::Relaxed);
         Self {
             inner: self.inner.clone(),
         }
