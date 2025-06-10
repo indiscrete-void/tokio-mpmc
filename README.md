@@ -94,8 +94,8 @@ cargo criterion --message-format=json | criterion-table > BENCHMARKS.md
 
 |              | `tokio-mpsc-channel`          | `tokio-mpmc-channel`             | `tokio-mpmc-queue`               | `flume`                           |
 |:-------------|:------------------------------|:---------------------------------|:---------------------------------|:--------------------------------- |
-| **`non-io`** | `1.39 ms` (✅ **1.00x**)       | `65.38 us` (🚀 **21.21x faster**) | `168.86 us` (🚀 **8.21x faster**) | `773.68 us` (✅ **1.79x faster**)  |
-| **`io`**     | `197.97 ms` (✅ **1.00x**)     | `46.32 ms` (🚀 **4.27x faster**)  | `46.83 ms` (🚀 **4.23x faster**)  | `197.76 ms` (✅ **1.00x faster**)  |
+| **`non-io`** | `1.44 ms` (✅ **1.00x**)       | `185.29 us` (🚀 **7.78x faster**) | `661.85 us` (🚀 **2.18x faster**) | `801.11 us` (✅ **1.80x faster**)  |
+| **`io`**     | `244.11 ms` (✅ **1.00x**)     | `190.56 ms` (✅ **1.28x faster**) | `197.83 ms` (✅ **1.23x faster**) | `206.23 ms` (✅ **1.18x faster**)  |
 
 > **Note**: `non-io` means no IO operation, `io` means IO operation.
 
