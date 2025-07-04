@@ -1,3 +1,5 @@
+cargo-features = ["edition2024"]
+
 [package]
 name = "tokio-mpmc"
 version = "0.2.4"
